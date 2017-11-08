@@ -38,7 +38,7 @@ void Cart2Sphere(double x, double y, double z, double& r, double& alpha, double&
 	beta  = atan2(z, sqrt(x * x + y * y));
 }
 
-void RotateForward(double alpha0, double beta0, double& alpha, double& beta)
+void RotateForward(double alpha0, double beta0, double alpha, double beta, double& fai, double& theta)
 {
 	double r = 1.0;
 	double x1, y1, z1;	// 原坐标系投影位置
@@ -55,17 +55,17 @@ void RotateForward(double alpha0, double beta0, double& alpha, double& beta)
 	 y2 = -sin(alpha0) * x1 + cos(alpha0) * y1;
 	 z2 = cos(beta0) * cos(alpha0) * x1 + cos(beta0) * sin(alpha0) * y1 + sin(beta0) * z1;
 	// 将旋转变换后的直角坐标转换为球坐标, 即以(alpha0, beta0)为极轴的新球坐标系中的位置
-	Cart2Sphere(x2, y2, z2, r, alpha, beta);
+	Cart2Sphere(x2, y2, z2, r, fai, theta);
 }
 
-void RotateReverse(double alpha0, double beta0, double& alpha, double& beta)
+void RotateReverse(double alpha0, double beta0, double fai, double theta, double& alpha, double& beta)
 {
 	double r = 1.0;
 	double x1, y1, z1;
 	double x2, y2, z2;
 
 	// 在新坐标系的球坐标转换为直角坐标
-	Sphere2Cart(r, alpha, beta, x1, y1, z1);
+	Sphere2Cart(r, fai, theta, x1, y1, z1);
 	/*! 对直角坐标做旋转变换.  定义矢量V=(alpha0, beta0)
 	 * 主动旋转, 旋转矢量V
 	 * 先绕Y轴逆时针旋转: PI90 - beta0
@@ -79,19 +79,19 @@ void RotateReverse(double alpha0, double beta0, double& alpha, double& beta)
 }
 
 // 球坐标投影到平面坐标
-void ProjectForward(double A0, double D0, double A, double D, double &k, double &e)
+void ProjectForward(double A0, double D0, double A, double D, double &ksi, double &eta)
 {
 	double fract = sin(D0) * sin(D) + cos(D0) * cos(D) * cos(A - A0);
-	k = cos(D) * sin(A - A0) / fract;
-	e = (cos(D0) * sin(D) - sin(D0) * cos(D) * cos(A - A0)) / fract;
+	ksi = cos(D) * sin(A - A0) / fract;
+	eta = (cos(D0) * sin(D) - sin(D0) * cos(D) * cos(A - A0)) / fract;
 }
 
 // 被投影的平面坐标转换到球坐标
-void ProjectReverse(double A0, double D0, double k, double e, double &A, double &D)
+void ProjectReverse(double A0, double D0, double ksi, double eta, double &A, double &D)
 {
-	double fract = cos(D0) - e * sin(D0);
-	A = A0 + atan2(k, fract);
-	D = atan(((e * cos(D0) + sin(D0)) * cos(A - A0)) / fract);
+	double fract = cos(D0) - eta * sin(D0);
+	A = A0 + atan2(ksi, fract);
+	D = atan(((eta * cos(D0) + sin(D0)) * cos(A - A0)) / fract);
 	if(A < 0) A += A2PI;
 	else if(A >= A2PI) A -= A2PI;
 }
@@ -105,9 +105,9 @@ void MatRealMult(int M, int L, int N, double A[], double B[], double RM[]) {
 
 	q0 = (double *)calloc(L, sizeof(double));
 	for(i = 0; i < N; ++i, ++RM) {
-		for(k = 0, p = B + i; k < L; p += N) q0[k++] = *p;
+		for(k = 0, p = B + i; k < L; ++k, p += N) q0[k] = *p;
 		for(j = 0, p = A, q = RM; j < M; ++j, q += N) {
-			for(k = 0, z = 0.; k < L;) z += *p++ * q0[k++];
+			for(k = 0, z = 0.; k < L; ++k, ++p) z += *p * q0[k];
 			*q = z;
 		}
 	}
@@ -120,30 +120,30 @@ void MatTrans(int M, int N, double A[], double B[]) {
 	double *p, *q;
 
 	for(i = 0, q = B; i < N; ++i, ++A) {
-		for(j = 0, p = A; j < M; ++j, p += N) *q++ = *p;
+		for(j = 0, p = A; j < M; ++j, p += N, ++q) *q = *p;
 	}
 }
 
 int MatInvert(int N, double A[]) {
 	int lc;
-	int *le;
+	int *le, *lep;
 	double s,t,tq = 0., zr = 1.e-15;
 	double *pa, *pd, *ps, *p, *q;
 	double *q0;
 	int i, j, k, m;
 
-	le = (int *) malloc(N * sizeof(int));
+	le = lep = (int *) malloc(N * sizeof(int));
 	q0 = (double *) malloc(N * sizeof(double));
 
 	for(j = 0, pa = pd = A; j < N ; ++j, ++pa, pd += N + 1) {
 		if( j > 0) {
-			for(i = 0, q = q0, p = pa; i < N; ++i, p += N) *q++ = *p;
+			for(i = 0, q = q0, p = pa; i < N; ++i, ++q, p += N) *q = *p;
 			for(i = 1; i < N; ++i) {
 				lc = i < j ? i : j;
-				for(k = 0, p = pa + i * N - j, q = q0,t = 0.; k < lc ;++k) t += *p++ * *q++;
+				for(k = 0, p = pa + i * N - j, q = q0,t = 0.; k < lc ;++k, ++p, ++q) t += *p * *q;
 				q0[i] -= t;
 			}
-			for(i = 0, q = q0, p = pa; i < N; ++i, p += N) *p = *q++;
+			for(i = 0, q = q0, p = pa; i < N; ++i, p += N, ++q) *p = *q;
 		}
 
 		s = fabs(*pd);
@@ -158,23 +158,18 @@ int MatInvert(int N, double A[]) {
 
 		tq = tq > s ? tq : s;
 		if(s < zr * tq) {
-/** 2014-04-22
- * 当进入该判断时, free(le)在64位MAC OS X系统下报错, 提示:
- * error for object 0x7fee03403bd0: pointer being freed was not allocated
- * 理论上, 其它系统可能存在相同问题
- * 编译环境说明: 内存分配以16字节对齐
- */
 			free(q0);
-//			free(le);
+			free(le);
 			return -1;
 		}
 
-		*le++ = lc;
+		*lep = lc;
+		++lep;
 		if(lc != j) {
-			for(k = 0,p = A + N * j, q = A + N * lc; k < N; ++k) {
+			for(k = 0, p = A + N * j, q = A + N * lc; k < N; ++k, ++p, ++q) {
 				t = *p;
-				*p++ = *q;
-				*q++ = t;
+				*p = *q;
+				*q = t;
 			}
 		}
 
@@ -188,23 +183,23 @@ int MatInvert(int N, double A[]) {
 
 	for(j = 1, pa = A; j < N; ++j) {
 		++pa;
-		for(i = 0, q = q0, p = pa; i < j; ++i, p += N) *q++ = *p;
+		for(i = 0, q = q0, p = pa; i < j; ++i, p += N, ++q) *q = *p;
 		for(k = 0; k < j; ++k) {
 			t=0.;
-			for(i = k, p = pa + k * N + k - j, q = q0 + k; i<j; ++i) t -= *p++ * *q++;
+			for(i = k, p = pa + k * N + k - j, q = q0 + k; i<j; ++i, ++p, ++q) t -= *p * *q;
 			q0[k] = t;
 		}
-		for(i = 0, q = q0, p = pa; i < j; ++i, p += N) *p = *q++;
+		for(i = 0, q = q0, p = pa; i < j; ++i, p += N, ++q) *p = *q;
 	}
 
 	for(j = N - 2, pd = pa = A + N * N - 1; j >= 0; --j) {
 		--pa;
 		pd -= N + 1;
 
-		for(i = 0, m = N - j - 1, q = q0, p = pd + N; i < m; ++i, p += N) *q++ = *p;
+		for(i = 0, m = N - j - 1, q = q0, p = pd + N; i < m; ++i, p += N, ++q) *q = *p;
 		for(k = N - 1, ps = pa; k > j; --k, ps -= N) {
 			t = -(*ps);
-			for(i = j + 1, p = ps, q = q0; i < k; ++i) t -= *++p * *q++;
+			for(i = j + 1, p = ps, q = q0; i < k; ++i, ++q) t -= *++p * *q;
 			q0[--m] = t;
 		}
 		for(i = 0, m = N - j - 1, q = q0, p = pd + N; i < m; ++i, p += N) *p = *q++;
@@ -222,8 +217,8 @@ int MatInvert(int N, double A[]) {
 		for(i = 0, q = q0, p = pa; i < N; ++i, p += N) *p = *q++;
 	}
 
-	for(j = N - 2, le--; j >= 0;--j) {
-		for(k = 0, p = A + j, q = A + *(--le); k < N; ++k, p += N, q += N) {
+	for(j = N - 2, --lep; j >= 0;--j) {
+		for(k = 0, p = A + j, q = A + *(--lep); k < N; ++k, p += N, q += N) {
 			t = *p;
 			*p = *q;
 			*q = t;

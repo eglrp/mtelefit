@@ -46,6 +46,11 @@
    (alpha_1, delta_1; fai, theta)==>(alpha, delta)
  */
 
+#include <stdio.h>
+#include <string>
+
+using std::string;
+
 int main(int argc, char** argv) {
 
 	return 0;
