@@ -6,6 +6,9 @@
  Last Date   : Oct 13, 2012
  Description : 天文数字图像处理中常用的数学函数
  **/
+
+#include <stdlib.h>
+#include <string.h>
 #include "ADefine.h"
 #include "AMath.h"
 
@@ -31,7 +34,7 @@ void Cart2Sphere(double x, double y, double z, double& r, double& alpha, double&
 {
 	r = sqrt(x * x + y * y + z * z);
 	if (fabs(y) < AEPS && fabs(x) < AEPS) alpha = 0;
-	else if ((alpha = atan2(y, x)) < 0) alpha += PI360;
+	else if ((alpha = atan2(y, x)) < 0) alpha += A2PI;
 	beta  = atan2(z, sqrt(x * x + y * y));
 }
 
@@ -89,8 +92,8 @@ void ProjectReverse(double A0, double D0, double k, double e, double &A, double 
 	double fract = cos(D0) - e * sin(D0);
 	A = A0 + atan2(k, fract);
 	D = atan(((e * cos(D0) + sin(D0)) * cos(A - A0)) / fract);
-	if(A < 0) A += PI360;
-	else if(A >= PI360) A -= PI360;
+	if(A < 0) A += A2PI;
+	else if(A >= A2PI) A -= A2PI;
 }
 /*------------------------------- 部分球坐标转换 -------------------------------*/
 ///////////////////////////////////////////////////////////////////////////////
@@ -549,12 +552,12 @@ void Lagrange(int N, double XI[], double YI[], int OD, int M, double XO[], doubl
 /*------------------------------- 部分星等转换 -------------------------------*/
 double Sr2Arcsec(double sr)
 {
-	return (sr * RtoS * RtoS);
+	return (sr * R2S * R2S);
 }
 
 double Arcsec2Sr(double sas)
 {
-	return (sas / RtoS / RtoS);
+	return (sas / R2S / R2S);
 }
 
 double Mag2Watt(double mag)
