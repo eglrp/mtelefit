@@ -102,7 +102,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_mtelefit_OBJECTS = AMath.$(OBJEXT) ATimeSpace.$(OBJEXT) \
-	mtelefit.$(OBJEXT)
+	WCSTNX.$(OBJEXT) wafit.$(OBJEXT) mtelefit.$(OBJEXT)
 mtelefit_OBJECTS = $(am_mtelefit_OBJECTS)
 mtelefit_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_$(V))
@@ -265,7 +265,7 @@ target_vendor = apple
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
-mtelefit_SOURCES = AMath.cpp ATimeSpace.cpp mtelefit.cpp
+mtelefit_SOURCES = AMath.cpp ATimeSpace.cpp WCSTNX.cpp wafit.cpp mtelefit.cpp
 all: all-am
 
 .SUFFIXES:
@@ -354,7 +354,9 @@ distclean-compile:
 
 include ./$(DEPDIR)/AMath.Po
 include ./$(DEPDIR)/ATimeSpace.Po
+include ./$(DEPDIR)/WCSTNX.Po
 include ./$(DEPDIR)/mtelefit.Po
+include ./$(DEPDIR)/wafit.Po
 
 .cpp.o:
 	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

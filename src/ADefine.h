@@ -44,9 +44,39 @@ namespace AstroUtil {
 #define AMAX			1E30			//< 最大值
 
 // 宏定义函数
-
 #define frac(x)		((x) - floor(x))		// 计算实数的小数部分
 #define reduce(x, period)	((x) - floor((x) / (period)) * (period))	// 将数值调整到一个周期内
+
+// 浮点型点
+typedef struct POINT2F {
+	double x, y;	//< XY坐标
+
+public:
+	POINT2F() {
+		x = y = 0.0;
+	}
+
+	POINT2F(double _x, double _y) {
+		x = _x;
+		y = _y;
+	}
+
+	POINT2F& operator=(const POINT2F& pt) {
+		if (this != &pt) {
+			x = pt.x;
+			y = pt.y;
+		}
+		return *this;
+	}
+
+	bool operator==(const POINT2F& pt) {
+		double dx = x - pt.x;
+		double dy = y - pt.y;
+		if (dx < 0.0) dx = -dx;
+		if (dy < 0.0) dy = -dy;
+		return (dx < AEPS && dy < AEPS);
+	}
+}PT2F;
 ///////////////////////////////////////////////////////////////////////////////
 }
 
