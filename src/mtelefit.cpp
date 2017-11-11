@@ -48,10 +48,121 @@
 
 #include <stdio.h>
 #include <string>
+#include "WCSTNX.h"
+#include "AMath.h"
 
 using std::string;
+using namespace AstroUtil;
 
 int main(int argc, char** argv) {
+/* 验证相同XY在不同图像生成的.accrel关系下, 对应的KE坐标
+	if (argc < 4) {
+		printf("Usage:\n\t mtelefit coords.db x y\n");
+		return -1;
+	}
 
+	string pathacc = argv[1];
+	double x = atof(argv[2]);
+	double y = atof(argv[3]);
+	double ksi, eta;
+	WCSTNX tnx;
+
+	if (!tnx.LoadText(pathacc.c_str())) {
+		printf("failed to load coords.db<%s>\n", pathacc.c_str());
+		return -2;
+	}
+
+	tnx.XY2WCS(x, y, ksi, eta);
+	printf("center<%7.2f  %7.2f> = <%12.8f  %12.8f>\n", x, y, ksi * R2D, eta * R2D);
+*/
+
+/* 为ccmap拟合生成XY-KE对应关系
+	if (argc < 3) {
+		printf("Usage:\n\t mtelefit coords.db xytoradec\n");
+		return -1;
+	}
+
+	string pathacc = argv[1];
+	string pathdata = argv[2];
+	WCSTNX tnx;
+	double x0(2068.5), y0(2068.5), x, y;
+	double ra0, dec0, ksi, eta; // 弧度
+	double ra, dec; // 角度
+	FILE *fp, *rslt;
+	const int lnsize(200);
+	char line[lnsize];
+
+	if (!tnx.LoadText(pathacc.c_str())) {
+		printf("failed to load coords.db<%s>\n", pathacc.c_str());
+		return -2;
+	}
+	// 使用.acc计算视场中心坐标(ra0, dec0)
+	tnx.XY2WCS(x0, y0, ra0, dec0);
+	printf("center<%7.2f  %7.2f> = <%12.8f  %12.8f>\n", x0, y0, ra0 * R2D, dec0 * R2D);
+
+	if ((fp = fopen(pathdata.c_str(), "r")) == NULL) {
+		printf("failed to open data<%s>\n", pathdata.c_str());
+		return -3;
+	}
+	rslt = fopen("result1.txt", "w");
+
+	while(!feof(fp)) {
+		if (fgets(line, lnsize, fp) == NULL) continue;
+		sscanf(line, "%lf %lf %lf %lf", &x, &y, &ra, &dec);
+		// 计算.axycc中各(ra,dec)相对(ra0,dec0)的坐标(ksi, eta)
+		RotateForward(ra0, dec0, ra * D2R, dec * D2R, ksi, eta);
+		printf("%7.2f %7.2f %12.8f %12.8f %12.8f %12.8f\n",
+				x, y, ra, dec, ksi * R2D, eta * R2D);
+		fprintf(rslt, "%7.2f %7.2f %12.8f %12.8f %12.8f %12.8f\n",
+				x, y, ra, dec, ksi * R2D, eta * R2D);
+	}
+
+	fclose(rslt);
+	fclose(fp);
+*/
+
+///*
+	if (argc < 3) {
+		printf("Usage:\n\t mtelefit coords.db xytoradec\n");
+		return -1;
+	}
+
+	string pathacc = argv[1];
+	string pathdata = argv[2];
+	WCSTNX tnx;
+	FILE *fp, *rslt;
+	const int lnsize(200);
+	char line[lnsize];
+	double x, y, ra1, dec1, ra2, dec2, era, edec;
+
+	if (!tnx.LoadText(pathacc.c_str())) {
+		printf("failed to load coords.db<%s>\n", pathacc.c_str());
+		return -2;
+	}
+	if ((fp = fopen(pathdata.c_str(), "r")) == NULL) {
+		printf("failed to open data<%s>\n", pathdata.c_str());
+		return -3;
+	}
+	rslt = fopen("result1.txt", "w");
+
+	while(!feof(fp)) {
+		if (fgets(line, lnsize, fp) == NULL) continue;
+		sscanf(line, "%lf %lf %lf %lf", &x, &y, &ra1, &dec1);
+		tnx.XY2WCS(x, y, ra2, dec2);
+		ra2 *= R2D;
+		dec2 *= R2D;
+		era  = ra2 - ra1;
+		edec = dec2 - dec1;
+		if (era > 180.0) era -= 360.0;
+		else if (era < -180.0) era += 360.0;
+		printf("%7.2f   %7.2f   %9.5f   %9.5f   %9.5f   %9.5f   %7.1f   %7.1f\n",
+				x, y, ra1, dec1, ra2, dec2, era * 3600.0, edec * 3600.0);
+		fprintf(rslt, "%7.2f   %7.2f   %9.5f   %9.5f   %9.5f   %9.5f   %7.1f   %7.1f\n",
+				x, y, ra1, dec1, ra2, dec2, era * 3600.0, edec * 3600.0);
+	}
+
+	fclose(rslt);
+	fclose(fp);
+//*/
 	return 0;
 }
